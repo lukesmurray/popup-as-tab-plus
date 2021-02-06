@@ -1,56 +1,39 @@
 // This file is ran as a background script
 console.log("Hello from background script!");
+console.log("foo");
 
 // background script
+chrome.windows.getCurrent({}, (w) => {
+  const mainWindowId = w.id;
 
-// get settings
-chrome.storage.sync.get(
-  {
-    // default value
-    t1pop: true,
-    t1foc: true,
-  },
-  function (items) {
-    t1pop = items.t1pop;
-    t1foc = items.t1foc;
-
-    // open pop-up as a tab
-    chrome.windows.getCurrent({}, function (w) {
-      var mainwindow = w.id;
-      chrome.windows.onCreated.addListener(function (w) {
-        if (w.type == "popup" && t1pop == true) {
-          chrome.windows.get(w.id, { populate: true }, function (w) {
-            chrome.tabs.query(
-              {
-                active: true,
-                windowId: w.id,
-              },
-              function (tabs) {
-                var t1popUrl = tabs[0].url;
-                if (t1popUrl.startsWith("chrome-extension://") == false) {
-                  chrome.tabs.move(
-                    w.tabs[0].id,
-                    { windowId: mainwindow, index: -1 },
-                    function () {
-                      chrome.tabs.update(w.tabs[0].id, {
-                        active: t1foc /* focus new window or not */,
-                      });
-                    }
-                  );
+  chrome.windows.onCreated.addListener((window) => {
+    // if we found a popup
+    if (window.type === "popup") {
+      chrome.windows.get(window.id, { populate: true }, (w) => {
+        chrome.tabs.query(
+          {
+            active: true,
+            windowId: w.id,
+          },
+          (tabs) => {
+            if (tabs.length === 0) {
+              return;
+            }
+            const activeTab = tabs[0];
+            const activeTabUrl = activeTab.url;
+            const activeTabId = activeTab.id;
+            if (activeTabId !== undefined) {
+              chrome.tabs.move(
+                activeTabId,
+                { windowId: mainWindowId, index: -1 },
+                () => {
+                  chrome.tabs.update(activeTabId, { active: false });
                 }
-              }
-            );
-          });
-        }
-      });
-
-      chrome.windows.onFocusChanged.addListener(function (w) {
-        chrome.windows.get(w, {}, function (w) {
-          if (w.type == "normal") {
-            mainwindow = w.id;
+              );
+            }
           }
-        });
+        );
       });
-    });
-  }
-);
+    }
+  });
+});
