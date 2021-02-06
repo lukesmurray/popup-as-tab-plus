@@ -23,6 +23,7 @@ import { VscTrash } from "react-icons/vsc";
 import "./App.css";
 import {
   AppState,
+  defaultAppState,
   getSyncData,
   isStateEqual,
   setSyncData,
@@ -36,15 +37,16 @@ interface State {
 }
 type Action =
   | { type: "set_enabled"; enabled: boolean }
-  | { type: "add_whitelist_url"; url: string }
-  | { type: "remove_whitelist_url"; url: string }
+  | { type: "add_popup_whitelist_url"; url: string }
+  | { type: "remove_popup_whitelist_url"; url: string }
+  | { type: "add_window_whitelist_url"; url: string }
+  | { type: "remove_window_whitelist_url"; url: string }
   | { type: "load_initial_state"; state: AppState }
   | { type: "load_changed_state"; state: AppState }
   | { type: "update_sync_state" }
   | { type: "update_sync_state_fail" };
 
 const reducer = (state: State, action: Action): State => {
-  console.log(action.type, state, action);
   switch (action.type) {
     case "set_enabled":
       return {
@@ -55,17 +57,20 @@ const reducer = (state: State, action: Action): State => {
         },
         synced: false,
       };
-    case "add_whitelist_url":
+    case "add_popup_whitelist_url":
       return {
         ...state,
         appState: {
           ...state.appState,
-          whitelistUrls: [...state.appState.whitelistUrls, action.url],
+          popupWhitelistUrls: [
+            ...state.appState.popupWhitelistUrls,
+            action.url,
+          ],
         },
         synced: false,
       };
-    case "remove_whitelist_url": {
-      const idx = state.appState.whitelistUrls.indexOf(action.url);
+    case "remove_popup_whitelist_url": {
+      const idx = state.appState.popupWhitelistUrls.indexOf(action.url);
       if (idx === -1) {
         return state;
       }
@@ -73,9 +78,38 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         appState: {
           ...state.appState,
-          whitelistUrls: [
-            ...state.appState.whitelistUrls.slice(0, idx),
-            ...state.appState.whitelistUrls.slice(idx + 1),
+          popupWhitelistUrls: [
+            ...state.appState.popupWhitelistUrls.slice(0, idx),
+            ...state.appState.popupWhitelistUrls.slice(idx + 1),
+          ],
+        },
+        synced: false,
+      };
+    }
+    case "add_window_whitelist_url":
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          windowWhitelistUrls: [
+            ...state.appState.windowWhitelistUrls,
+            action.url,
+          ],
+        },
+        synced: false,
+      };
+    case "remove_window_whitelist_url": {
+      const idx = state.appState.windowWhitelistUrls.indexOf(action.url);
+      if (idx === -1) {
+        return state;
+      }
+      return {
+        ...state,
+        appState: {
+          ...state.appState,
+          windowWhitelistUrls: [
+            ...state.appState.windowWhitelistUrls.slice(0, idx),
+            ...state.appState.windowWhitelistUrls.slice(idx + 1),
           ],
         },
         synced: false,
@@ -86,11 +120,6 @@ const reducer = (state: State, action: Action): State => {
     }
     case "load_changed_state": {
       if (isStateEqual(state.appState, action.state)) {
-        console.log(
-          "ignoring change",
-          "equal",
-          isStateEqual(state.appState, action.state)
-        );
         return state;
       } else {
         return { ...state, appState: action.state, synced: true, loaded: true };
@@ -105,17 +134,10 @@ const reducer = (state: State, action: Action): State => {
 
 const App = () => {
   const [state, dispatch] = useReducer(reducer, {
-    appState: {
-      whitelistUrls: [],
-      enabled: false,
-    },
+    appState: defaultAppState,
     loaded: false,
     synced: false,
   });
-
-  // local state
-  const [whitelistUrl, setWhitelistUrl] = useState("");
-  const [whitelistUrlErrorText, setWhitelistUrlErrorText] = useState("");
 
   // get the synced data on load
   useEffect(() => {
@@ -156,48 +178,22 @@ const App = () => {
     }
   }, [state.appState, state.loaded, state.synced]);
 
-  // function called to validate a whitelist url
-  const validateWhiteListUrl = (newUrl: string) => {
-    if (state.appState.whitelistUrls.indexOf(newUrl) !== -1) {
-      setWhitelistUrlErrorText("Url already added to whitelist.");
-    } else {
-      setWhitelistUrlErrorText("");
-    }
-  };
-
-  const handleWhitelistUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setWhitelistUrl(event.target.value);
-    validateWhiteListUrl(event.target.value);
-  };
-
-  const handleWhitelistUrlKeyUp = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (
-      event.key === "Enter" &&
-      whitelistUrl !== "" &&
-      whitelistUrlErrorText === ""
-    ) {
-      dispatch({ type: "add_whitelist_url", url: whitelistUrl });
-      setWhitelistUrl("");
-    }
-  };
-
-  const handleRemoveWhitelistUrl = (url: string) => {
-    dispatch({ type: "remove_whitelist_url", url });
-  };
-
-  const CloseIconSize = "18px";
-
   return (
     // max height and width are 600x600
-    <Flex w={"400px"} h={"400px"} direction={"column"} p={2}>
+    <Flex minW={"400px"} minH={"400px"} direction={"column"} p={2}>
       <Heading size={"md"}>
         Popup as tab plus{" "}
         <span role="img" aria-label="star emoji">
           ✨
         </span>
       </Heading>
+      <Text size={"xs"}>
+        Urls are matched by prefix. For example, &quot;https://e&quot; matches
+        &quot;https://example.com&quot;. The entire prefix must match including
+        the &quot;https&quot; part.
+      </Text>
       <FormControl id="enabled">
-        <FormLabel>Enabled</FormLabel>
+        <FormLabel fontSize="sm">Enabled</FormLabel>
         <Checkbox
           isChecked={state.appState.enabled}
           onChange={(e) =>
@@ -205,30 +201,117 @@ const App = () => {
           }
           isDisabled={!state.loaded}
         />
-        <FormHelperText>Enable or disable the extension.</FormHelperText>
-        <FormErrorMessage>{whitelistUrlErrorText}</FormErrorMessage>
+        <FormHelperText fontSize="xs">
+          Enable or disable the extension.
+        </FormHelperText>
+        <UrlList
+          state={state}
+          dispatch={dispatch}
+          onRemoveUrl={(url) =>
+            dispatch({ type: "remove_popup_whitelist_url", url })
+          }
+          onAddUrl={(url) => dispatch({ type: "add_popup_whitelist_url", url })}
+          urls={state.appState.popupWhitelistUrls}
+          loaded={state.loaded}
+          formId={"popup-whitelist"}
+          formHelpText={
+            "Popups with a url that matches one of these strings will be converted into tabs"
+          }
+          formLabel={"Popup Url Whitelist"}
+        />
+        <UrlList
+          state={state}
+          dispatch={dispatch}
+          onRemoveUrl={(url) =>
+            dispatch({ type: "remove_window_whitelist_url", url })
+          }
+          onAddUrl={(url) =>
+            dispatch({ type: "add_window_whitelist_url", url })
+          }
+          urls={state.appState.windowWhitelistUrls}
+          formId={"window-whitelist"}
+          formHelpText={
+            "Popups created by a window with a url that matches one of these strings will be converted into tabs"
+          }
+          formLabel={"Window Url Whitelist"}
+          loaded={state.loaded}
+        />
       </FormControl>
-      <FormControl id="whitelist" isInvalid={whitelistUrlErrorText !== ""}>
-        <FormLabel>Whitelist</FormLabel>
+    </Flex>
+  );
+};
+
+interface UrlListProps {
+  dispatch: React.Dispatch<Action>;
+  state: State;
+  onRemoveUrl: (url: string) => void;
+  onAddUrl: (url: string) => void;
+  urls: string[];
+  loaded: boolean;
+  formId: string;
+  formHelpText: string;
+  formLabel: string;
+}
+
+const UrlList: React.VFC<UrlListProps> = (props) => {
+  const {
+    onAddUrl,
+    onRemoveUrl,
+    urls,
+    loaded,
+    formId,
+    formHelpText,
+    formLabel,
+  } = props;
+  // local state
+  const [url, setUrl] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // function called to validate a whitelist url
+  const validateUrl = (newUrl: string) => {
+    if (urls.indexOf(newUrl) !== -1) {
+      setErrorMsg("Url already in list.");
+    } else {
+      setErrorMsg("");
+    }
+  };
+
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setUrl(event.target.value);
+    validateUrl(event.target.value);
+  };
+
+  const handleUrlEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && url !== "" && errorMsg === "") {
+      onAddUrl(url);
+      setUrl("");
+    }
+  };
+
+  const handleRemoveWhitelistUrl = (url: string) => {
+    onRemoveUrl(url);
+  };
+
+  const CloseIconSize = "16px";
+  return (
+    <>
+      <FormControl id={formId} isInvalid={errorMsg !== ""}>
+        <FormLabel fontSize="sm">{formLabel}</FormLabel>
         <Input
           type="url"
           placeholder="https://google.com"
           variant="filled"
-          size="sm"
-          value={whitelistUrl}
-          onChange={handleWhitelistUrlChange}
-          onKeyUp={handleWhitelistUrlKeyUp}
-          isDisabled={!state.loaded}
+          size="xs"
+          value={url}
+          onChange={handleUrlChange}
+          onKeyUp={handleUrlEnter}
+          isDisabled={!loaded}
         />
-        <FormHelperText fontSize="xs">
-          Set the urls which open a popup as a new tab.
-          <br />
-          (Uses exact prefix match. https://g matches https://google.com)
-        </FormHelperText>
-        <FormErrorMessage>{whitelistUrlErrorText}</FormErrorMessage>
+        <FormHelperText fontSize="xs">{formHelpText}</FormHelperText>
+        <FormErrorMessage>{errorMsg}</FormErrorMessage>
       </FormControl>
-      <List flexShrink={100} flexGrow={1} overflowX="auto">
-        {state.appState.whitelistUrls.map((url) => (
+      <List maxH={"135px"} overflowY="scroll" boxShadow="inner" bg="gray.100">
+        {urls.map((url) => (
           <ListItem key={url} spacing={1}>
             <ListIcon
               as={(props) => <VscTrash {...props} size={CloseIconSize} />}
@@ -237,13 +320,13 @@ const App = () => {
               style={{ cursor: "pointer" }}
               onClick={() => handleRemoveWhitelistUrl(url)}
             />
-            <Text fontSize="md" as="span">
+            <Text fontSize="sm" as="span">
               {url}
             </Text>
           </ListItem>
         ))}
       </List>
-    </Flex>
+    </>
   );
 };
 

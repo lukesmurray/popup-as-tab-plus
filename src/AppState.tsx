@@ -1,11 +1,16 @@
 import isEqual from "lodash.isequal";
 
 export interface AppState {
-  whitelistUrls: string[];
+  popupWhitelistUrls: string[];
+  windowWhitelistUrls: string[];
   enabled: boolean;
 }
 
-const defaultState: AppState = { whitelistUrls: [], enabled: true };
+export const defaultAppState: AppState = {
+  popupWhitelistUrls: [],
+  windowWhitelistUrls: [],
+  enabled: true,
+};
 
 export const storageStateKey = "state";
 
@@ -16,7 +21,7 @@ export const getSyncData = () =>
         ? reject(Error(chrome.runtime.lastError.message))
         : resolve(
             result[storageStateKey] === undefined
-              ? defaultState
+              ? defaultAppState
               : JSON.parse(result[storageStateKey])
           )
     );

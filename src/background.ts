@@ -21,7 +21,6 @@ chrome.windows.getCurrent({}, (w) => {
           : JSON.parse(storageChange.newValue);
       if (newState !== undefined) {
         appState = newState;
-        console.log("changed state", appState);
       }
     }
   });
@@ -66,15 +65,16 @@ chrome.windows.getCurrent({}, (w) => {
                     const mainWindowActiveTab = mainWindowTabs[0];
                     const mainWindowActiveTabUrl = mainWindowActiveTab.url;
                     const mainWindowActiveTabId = mainWindowActiveTab.id;
+                    // exit if anything undefined
                     if (
                       popupActiveTabUrl !== undefined &&
                       popupActiveTabId !== undefined &&
                       mainWindowActiveTabUrl !== undefined &&
                       mainWindowActiveTabId !== undefined &&
-                      (appState.whitelistUrls.some((url) =>
+                      (appState.popupWhitelistUrls.some((url) =>
                         url.startsWith(popupActiveTabUrl)
                       ) ||
-                        appState.whitelistUrls.some((url) =>
+                        appState.popupWhitelistUrls.some((url) =>
                           url.startsWith(mainWindowActiveTabUrl)
                         ))
                     ) {
