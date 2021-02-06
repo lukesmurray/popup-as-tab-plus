@@ -25,5 +25,6 @@
       "js": ["content.js"]
     }
   ],
-  "permissions": ["tabs", "storage"]
+  "permissions": ["tabs", "storage"],
+  "key": "ipbbjbpdhmfojgakabccidfmnaloedob"
 }

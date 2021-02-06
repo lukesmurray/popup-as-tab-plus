@@ -1,0 +1,38 @@
+import isEqual from "lodash.isequal";
+
+export interface AppState {
+  whitelistUrls: string[];
+  enabled: boolean;
+}
+
+const defaultState: AppState = { whitelistUrls: [], enabled: true };
+
+export const storageStateKey = "state";
+
+export const getSyncData = () =>
+  new Promise<AppState>((resolve, reject) => {
+    return chrome.storage.sync.get(storageStateKey, (result) =>
+      chrome.runtime.lastError
+        ? reject(Error(chrome.runtime.lastError.message))
+        : resolve(
+            result[storageStateKey] === undefined
+              ? defaultState
+              : JSON.parse(result[storageStateKey])
+          )
+    );
+  });
+
+export const setSyncData = (state: AppState) =>
+  new Promise<void>((resolve, reject) => {
+    return chrome.storage.sync.set(
+      { [storageStateKey]: JSON.stringify(state) },
+      () =>
+        chrome.runtime.lastError
+          ? reject(Error(chrome.runtime.lastError.message))
+          : resolve()
+    );
+  });
+
+export const isStateEqual = (s1: any, s2: any) => {
+  return isEqual(s1, s2);
+};
