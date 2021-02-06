@@ -5,7 +5,7 @@ import { IconContext } from "react-icons";
 import App from "./App";
 import "./popup.css";
 
-var mountNode = document.getElementById("popup");
+const mountNode = document.getElementById("popup");
 ReactDOM.render(
   <ChakraProvider>
     <IconContext.Provider value={{ style: { verticalAlign: "middle" } }}>

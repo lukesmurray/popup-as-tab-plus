@@ -1,29 +1,21 @@
-# Chrome Extension boilerplate created with React Typescript
+# Popup as Tab Plus
 
-## Getting started
+![](./images/icon300.png)
 
-Create a project based on this boilerplate.
+Simple chrome extension for opening popups as tabs with support for whitelisting. If "https://example.com" always opens popups and you want it to open tabs instead you can add "https://example.com" to the window whitelist.
+Useful for developing applications which tend to open in new windows.
 
-```
-$ npx degit https://github.com/sivertschou/react-typescript-chrome-extension-boilerplate.git <project-name>
-```
+## Develop
 
-Navigate to the project directory and install the dependencies.
+`yarn start` and load unpacked extension into chrome.
+You can set DEBUG in AppState to try and debug the logic flow.
 
-```
-$ npm install
-```
+## Build prod
 
-To build the extension, and rebuild it when the files are changed, run
+`yarn build`
 
-```
-$ npm start
-```
+## Release
 
-After the project has been built, a directory named `dist` has been created. You have to add this directory to your Chrome browser:
+`yarn build && zip -r -9 dist.zip dist/*`
 
-1. Open Chrome.
-2. Navigate to `chrome://extensions`.
-3. Enable _Developer mode_.
-4. Click _Load unpacked_.
-5. Select the `dist` directory.
+Upload the `dist.zip` file to the [chrome developer dashboard](https://chrome.google.com/webstore/developer/dashboard)

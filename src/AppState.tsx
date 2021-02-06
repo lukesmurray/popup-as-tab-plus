@@ -1,5 +1,7 @@
 import isEqual from "lodash.isequal";
 
+export const DEBUG = false;
+
 export interface AppState {
   popupWhitelistUrls: string[];
   windowWhitelistUrls: string[];

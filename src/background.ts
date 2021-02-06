@@ -1,4 +1,4 @@
-import { AppState, getSyncData, storageStateKey } from "./AppState";
+import { AppState, DEBUG, getSyncData, storageStateKey } from "./AppState";
 
 // background script
 chrome.windows.getCurrent({}, (w) => {
@@ -9,7 +9,9 @@ chrome.windows.getCurrent({}, (w) => {
   // load the initial state
   getSyncData().then((s) => {
     appState = s;
-    console.log("loaded state", appState);
+    if (DEBUG) {
+      console.log("loaded", appState);
+    }
   });
 
   chrome.storage.onChanged.addListener((changes) => {
@@ -21,6 +23,9 @@ chrome.windows.getCurrent({}, (w) => {
           : JSON.parse(storageChange.newValue);
       if (newState !== undefined) {
         appState = newState;
+        if (DEBUG) {
+          console.log("updated", appState);
+        }
       }
     }
   });
@@ -29,6 +34,9 @@ chrome.windows.getCurrent({}, (w) => {
   chrome.windows.onCreated.addListener((popupWindow) => {
     // if it is a popup
     if (popupWindow.type === "popup") {
+      if (DEBUG) {
+        console.log("opened popup");
+      }
       // load the popup window
       chrome.windows.get(popupWindow.id, { populate: true }, (popupWindow) => {
         // get the popup window tabs
@@ -56,6 +64,14 @@ chrome.windows.getCurrent({}, (w) => {
                       popupTabs.length === 0 ||
                       mainWindowTabs.length === 0
                     ) {
+                      if (DEBUG) {
+                        console.log(
+                          "early exit",
+                          appState,
+                          popupTabs,
+                          mainWindowTabs
+                        );
+                      }
                       return;
                     }
                     // get the info we need
@@ -74,7 +90,7 @@ chrome.windows.getCurrent({}, (w) => {
                       (appState.popupWhitelistUrls.some((url) =>
                         url.startsWith(popupActiveTabUrl)
                       ) ||
-                        appState.popupWhitelistUrls.some((url) =>
+                        appState.windowWhitelistUrls.some((url) =>
                           url.startsWith(mainWindowActiveTabUrl)
                         ))
                     ) {
@@ -87,6 +103,17 @@ chrome.windows.getCurrent({}, (w) => {
                           });
                         }
                       );
+                    } else {
+                      if (DEBUG) {
+                        console.log("late exit", {
+                          popupActiveTab,
+                          popupActiveTabUrl,
+                          popupActiveTabId,
+                          mainWindowActiveTab,
+                          mainWindowActiveTabUrl,
+                          mainWindowActiveTabId,
+                        });
+                      }
                     }
                   }
                 );

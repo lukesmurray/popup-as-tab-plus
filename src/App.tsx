@@ -20,9 +20,9 @@ import React, {
   useState,
 } from "react";
 import { VscTrash } from "react-icons/vsc";
-import "./App.css";
 import {
   AppState,
+  DEBUG,
   defaultAppState,
   getSyncData,
   isStateEqual,
@@ -47,6 +47,9 @@ type Action =
   | { type: "update_sync_state_fail" };
 
 const reducer = (state: State, action: Action): State => {
+  if (DEBUG) {
+    console.log(action.type, state, action);
+  }
   switch (action.type) {
     case "set_enabled":
       return {
